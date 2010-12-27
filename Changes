@@ -1,4 +1,8 @@
 Revision history for Locale-ID-GuessGender-FromFirstName
 
+0.02    2010-12-27
+        - Add REST::Google's missing dependency: JSON
+        - Update tests
+
 0.01    2010-05-13
         - First release
