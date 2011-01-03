@@ -21,6 +21,7 @@ encountered people's names in Indonesia, using several algorithms.
 
 =cut
 
+use 5.010;
 use strict;
 use warnings;
 
