@@ -1,4 +1,83 @@
 package Locale::ID::GuessGender::FromFirstName;
+
+use 5.010001;
+use strict;
+use warnings;
+
+# VERSION
+
+my @known_algos = qw/common v1_rules google/;
+
+use Locale::ID::GuessGender::FromFirstName::common;
+use Locale::ID::GuessGender::FromFirstName::v1_rules;
+use Locale::ID::GuessGender::FromFirstName::google;
+
+our @ISA = qw(Exporter);
+our @EXPORT_OK = qw(guess_gender);
+
+sub guess_gender {
+    my $opts;
+    if (@_ && ref($_[0]) eq 'HASH') {
+        $opts = shift;
+    } else {
+        $opts = {};
+    }
+    die "Please specify at least 1 name" unless @_;
+
+    # preprocess names
+    my @names;
+    for (@_) {
+        my $name = lc $_;
+        $name =~ s/[^a-z]//g;
+        die "Invalid first name `$_`" unless $name;
+        push @names, $name;
+    }
+
+    $opts->{try_all} //= 0;
+    $opts->{algos} //= [qw/common v1_rules/];
+    $opts->{min_guess_confidence} //= 0.51;
+    $opts->{algo_opts} //= {};
+
+    my @res = map {
+        {
+            name => $names[$_],
+            result => undef,
+            algo => undef,
+            algo_res => [],
+        }
+    } 0..$#names;
+    my $i = 0;
+    no strict 'refs';
+    for my $algo (@{ $opts->{algos} }) {
+        die "Unknown algoritm `$algo`, use one of: ".
+            join(", ", @known_algos) unless $algo ~~ @known_algos;
+        $i++;
+        my $func = "Locale::ID::GuessGender::FromFirstName::".
+            $algo . "::guess_gender";
+        my $algo_opts = $opts->{algo_opts}{$algo} // {};
+        my @algo_res = $func->($algo_opts,
+                               map { ($opts->{try_all} || !$res[$_]{result}) ?
+                                   $names[$_] : undef } 0..$#_);
+        for (0..$#algo_res) {
+            next unless $algo_res[$_];
+            $algo_res[$_]{algo} = $algo;
+            $algo_res[$_]{order} = $i;
+            push @{ $res[$_]{algo_res} }, $algo_res[$_];
+            if ($algo_res[$_]{success} &&
+                $algo_res[$_]{guess_confidence} >= $opts->{min_guess_confidence} &&
+                (!$res[$_]{result} || $res[$_]{guess_confidence} < $algo_res[$_]{guess_confidence})) {
+                $res[$_]{result} = $algo_res[$_]{result};
+                $res[$_]{gender_ratio} = $algo_res[$_]{gender_ratio};
+                $res[$_]{guess_confidence} = $algo_res[$_]{guess_confidence};
+                $res[$_]{algo} = $algo;
+            }
+        }
+    }
+
+    @res;
+}
+
+1;
 # ABSTRACT: Guess gender of an Indonesian first name
 
 =head1 SYNOPSIS
@@ -18,21 +97,6 @@ package Locale::ID::GuessGender::FromFirstName;
 
 This module provides a function to guess the gender of commonly
 encountered people's names in Indonesia, using several algorithms.
-
-=cut
-
-use 5.010;
-use strict;
-use warnings;
-
-my @known_algos = qw/common v1_rules google/;
-
-use Locale::ID::GuessGender::FromFirstName::common;
-use Locale::ID::GuessGender::FromFirstName::v1_rules;
-use Locale::ID::GuessGender::FromFirstName::google;
-
-our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(guess_gender);
 
 =head1 FUNCTIONS
 
@@ -110,69 +174,6 @@ Per-algorithm result. Usually only useful for debugging.
 
 =back
 
-=cut
-
-sub guess_gender {
-    my $opts;
-    if (@_ && ref($_[0]) eq 'HASH') {
-        $opts = shift;
-    } else {
-        $opts = {};
-    }
-    die "Please specify at least 1 name" unless @_;
-
-    # preprocess names
-    my @names;
-    for (@_) {
-        my $name = lc $_;
-        $name =~ s/[^a-z]//g;
-        die "Invalid first name `$_`" unless $name;
-        push @names, $name;
-    }
-
-    $opts->{try_all} //= 0;
-    $opts->{algos} //= [qw/common v1_rules/];
-    $opts->{min_guess_confidence} //= 0.51;
-    $opts->{algo_opts} //= {};
-
-    my @res = map {
-        {
-            name => $names[$_],
-            result => undef,
-            algo => undef,
-            algo_res => [],
-        }
-    } 0..$#names;
-    my $i = 0;
-    no strict 'refs';
-    for my $algo (@{ $opts->{algos} }) {
-        die "Unknown algoritm `$algo`, use one of: ".
-            join(", ", @known_algos) unless $algo ~~ @known_algos;
-        $i++;
-        my $func = "Locale::ID::GuessGender::FromFirstName::".
-            $algo . "::guess_gender";
-        my $algo_opts = $opts->{algo_opts}{$algo} // {};
-        my @algo_res = $func->($algo_opts,
-                               map { ($opts->{try_all} || !$res[$_]{result}) ?
-                                   $names[$_] : undef } 0..$#_);
-        for (0..$#algo_res) {
-            next unless $algo_res[$_];
-            $algo_res[$_]{algo} = $algo;
-            $algo_res[$_]{order} = $i;
-            push @{ $res[$_]{algo_res} }, $algo_res[$_];
-            if ($algo_res[$_]{success} &&
-                $algo_res[$_]{guess_confidence} >= $opts->{min_guess_confidence} &&
-                (!$res[$_]{result} || $res[$_]{guess_confidence} < $algo_res[$_]{guess_confidence})) {
-                $res[$_]{result} = $algo_res[$_]{result};
-                $res[$_]{gender_ratio} = $algo_res[$_]{gender_ratio};
-                $res[$_]{guess_confidence} = $algo_res[$_]{guess_confidence};
-                $res[$_]{algo} = $algo;
-            }
-        }
-    }
-
-    @res;
-}
 
 =head1 BUGS/TODOS
 
@@ -180,10 +181,9 @@ This is a preliminary release. List of common names is not very
 complete. Heuristic rules are still too simplistic. Expect the
 accuracy of this module to improve in subsequent releases.
 
+
 =head1 SEE ALSO
 
 L<Locale::ID::ParseName::Person>
 
 =cut
-
-1;
