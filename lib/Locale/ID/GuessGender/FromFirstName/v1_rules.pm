@@ -3,6 +3,8 @@ package Locale::ID::GuessGender::FromFirstName::v1_rules;
 use strict;
 use warnings;
 
+# VERSION
+
 # XXX extract from common list instead of wild guessing
 my @rules = (
     [qr/.o$/,      M => 0.98],
@@ -13,40 +15,6 @@ my @rules = (
     [qr/.wati$/,   F => 0.99],
     [qr/.us$/,     M =>  0.7],
 );
-
-=head1 FUNCTIONS
-
-=head2 guess_gender([OPTS, ]FIRSTNAME...) => RES, ...
-
-Guess the gender of given first name(s). An optional hashref OPTS can
-be given as the first argument. Valid pair for OPTS:
-
-=over 4
-
-=back
-
-Will return a result hashref RES for each given input. Known pair of
-RES:
-
-=over 4
-
-=item success => BOOL
-
-Whether the algorithm succeeds.
-
-=item result => "M" or "F" or "both" or "neither" or undef.
-
-=item gender_ratio => FRACTION
-
-=item min_gender_ratio => FRACTION
-
-=item guess_confidence => FRACTION
-
-=item sample_ratio => INT
-
-=back
-
-=cut
 
 sub guess_gender {
     my $opts;
@@ -94,3 +62,38 @@ sub guess_gender {
 }
 
 1;
+# ABSTRACT: v1_rules
+
+=head1 FUNCTIONS
+
+=head2 guess_gender([OPTS, ]FIRSTNAME...) => RES, ...
+
+Guess the gender of given first name(s). An optional hashref OPTS can
+be given as the first argument. Valid pair for OPTS:
+
+=over 4
+
+=back
+
+Will return a result hashref RES for each given input. Known pair of
+RES:
+
+=over 4
+
+=item success => BOOL
+
+Whether the algorithm succeeds.
+
+=item result => "M" or "F" or "both" or "neither" or undef.
+
+=item gender_ratio => FRACTION
+
+=item min_gender_ratio => FRACTION
+
+=item guess_confidence => FRACTION
+
+=item sample_ratio => INT
+
+=back
+
+=cut
