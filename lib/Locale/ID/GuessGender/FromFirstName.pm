@@ -3,8 +3,10 @@ package Locale::ID::GuessGender::FromFirstName;
 use 5.010001;
 use strict;
 use warnings;
+use experimental 'smartmatch';
 
 # VERSION
+# DATE
 
 my @known_algos = qw/common v1_rules google/;
 
