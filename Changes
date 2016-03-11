@@ -1,5 +1,13 @@
 Revision history for Locale-ID-GuessGender-FromFirstName
 
+0.06    2016-03-11 (PERLANCAR)
+
+	- No functional changes.
+
+	- [dist] Remove prereq JSON (REST::Google now uses JSON::Any which
+	  it already lists as prereq).
+
+
 0.05    2014-05-26 (SHARYANTO)
 
         - No functional changes.
